@@ -38,8 +38,7 @@ export default function ProductCard({ product, showSimilar = true }) {
             onClick={findSimilar}
             className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5
                        bg-navy/80 text-white text-xs font-semibold px-3 py-1.5 rounded-full
-                       backdrop-blur-sm hover:bg-orange transition-all duration-200
-                       opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                       backdrop-blur-sm hover:bg-orange transition-colors duration-200"
           >
             <Sparkles size={12} /> Find similar
           </button>
