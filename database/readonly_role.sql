@@ -17,3 +17,13 @@ grant select on all tables in schema public to wfx_readonly;
 
 -- tables created later automatically become readable too
 alter default privileges in schema public grant select on tables to wfx_readonly;
+
+-- Row Level Security is enabled on all tables, which hides every row
+-- from a user unless a policy allows it. These policies say:
+-- "wfx_readonly may read all rows" (and still nothing else).
+create policy "readonly can read" on suppliers      for select to wfx_readonly using (true);
+create policy "readonly can read" on buyers         for select to wfx_readonly using (true);
+create policy "readonly can read" on finished_goods for select to wfx_readonly using (true);
+create policy "readonly can read" on sales_orders   for select to wfx_readonly using (true);
+create policy "readonly can read" on sales_invoices for select to wfx_readonly using (true);
+create policy "readonly can read" on tech_packs     for select to wfx_readonly using (true);
