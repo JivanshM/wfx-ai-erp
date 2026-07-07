@@ -63,8 +63,8 @@ export default function AiQuery() {
             <button
               key={s}
               onClick={() => ask(s)}
-              className="text-xs bg-white border border-gray-200 rounded-full px-3 py-1.5
-                         text-gray-600 hover:border-orange hover:text-orange
+              className="text-xs bg-card border border-line rounded-full px-3 py-1.5
+                         text-gray-400 hover:border-orange hover:text-orange
                          transition-colors duration-200"
             >
               {s}
@@ -77,7 +77,7 @@ export default function AiQuery() {
       <div className="space-y-4 mt-6">
         {entries.map((entry, i) => (
           <div key={i} className="card p-5">
-            <div className="font-semibold text-navy">{entry.question}</div>
+            <div className="font-semibold text-ink">{entry.question}</div>
 
             {entry.loading && (
               <div className="flex items-center gap-2 text-sm text-gray-500 mt-3">
@@ -87,7 +87,7 @@ export default function AiQuery() {
             )}
 
             {!entry.loading && !entry.success && (
-              <div className="mt-3 text-sm bg-red-50 text-red-700 rounded-lg p-3">
+              <div className="mt-3 text-sm bg-red-500/10 text-red-300 rounded-lg p-3">
                 {entry.error}
                 {entry.sql && (
                   <pre className="mt-2 text-xs bg-navy text-orange/90 rounded-lg p-3 overflow-x-auto">{entry.sql}</pre>
@@ -102,16 +102,16 @@ export default function AiQuery() {
                   <span
                     title={entry.confidence_reason}
                     className={`inline-block text-[11px] font-bold rounded-full px-2.5 py-1
-                      ${entry.confidence >= 80 ? "bg-green-100 text-green-700"
-                        : entry.confidence >= 50 ? "bg-amber-100 text-amber-700"
-                        : "bg-red-100 text-red-700"}`}
+                      ${entry.confidence >= 80 ? "bg-green-500/15 text-green-400"
+                        : entry.confidence >= 50 ? "bg-amber-500/15 text-amber-300"
+                        : "bg-red-500/15 text-red-300"}`}
                   >
                     {entry.confidence}% confident
                     {entry.confidence_reason && ` · ${entry.confidence_reason}`}
                   </span>
                 )}
                 {/* AI answer */}
-                {entry.answer && <p className="text-sm text-gray-700">{entry.answer}</p>}
+                {entry.answer && <p className="text-sm text-gray-300">{entry.answer}</p>}
 
                 {/* Generated SQL, collapsible */}
                 <details className="group">

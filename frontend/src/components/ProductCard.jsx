@@ -29,7 +29,7 @@ export default function ProductCard({ product, showSimilar = true }) {
   return (
     <div className="card overflow-hidden group hover:shadow-md transition-shadow duration-200">
       <div
-        className="aspect-[3/4] bg-gray-100 overflow-hidden relative cursor-pointer"
+        className="aspect-[3/4] bg-track overflow-hidden relative cursor-pointer"
         onClick={() => setDetailOpen(true)}
       >
         <img
@@ -58,7 +58,7 @@ export default function ProductCard({ product, showSimilar = true }) {
             </span>
           )}
         </div>
-        <div className="font-semibold text-navy text-sm mt-0.5 truncate">{product.style_name}</div>
+        <div className="font-semibold text-ink text-sm mt-0.5 truncate">{product.style_name}</div>
         <div className="text-xs text-gray-500 mt-1 truncate">
           {product.fabric} · {product.gsm} GSM
         </div>

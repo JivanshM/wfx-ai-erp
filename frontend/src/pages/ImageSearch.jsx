@@ -62,7 +62,7 @@ export default function ImageSearch() {
               type="button"
               onClick={() => setMode(value)}
               className={`text-sm font-semibold px-4 py-2 rounded-lg transition-colors duration-200
-                ${mode === value ? "bg-orange text-white shadow-lg shadow-orange/20" : "bg-workspace text-gray-600 hover:bg-gray-100"}`}
+                ${mode === value ? "bg-orange text-white shadow-lg shadow-orange/20" : "bg-workspace text-gray-400 hover:bg-track"}`}
             >
               {label}
             </button>
@@ -81,7 +81,7 @@ export default function ImageSearch() {
             />
             {preview ? (
               <div className="relative w-40">
-                <img src={preview} alt="preview" className="w-40 h-48 object-cover rounded-lg border border-gray-200" />
+                <img src={preview} alt="preview" className="w-40 h-48 object-cover rounded-lg border border-line" />
                 <button
                   type="button"
                   onClick={() => { setFile(null); setPreview(null); }}
@@ -94,7 +94,7 @@ export default function ImageSearch() {
               <button
                 type="button"
                 onClick={() => fileInput.current.click()}
-                className="w-full border-2 border-dashed border-gray-300 rounded-lg p-8
+                className="w-full border-2 border-dashed border-[#34363b] rounded-lg p-8
                            text-gray-500 hover:border-orange hover:text-orange
                            transition-colors duration-200 flex flex-col items-center gap-2"
               >
@@ -122,15 +122,15 @@ export default function ImageSearch() {
         </button>
       </form>
 
-      {error && <div className="mt-4 text-sm bg-red-50 text-red-700 rounded-lg p-3 max-w-2xl">{error}</div>}
+      {error && <div className="mt-4 text-sm bg-red-500/10 text-red-300 rounded-lg p-3 max-w-2xl">{error}</div>}
 
       {result && (
         <>
           {/* what the AI understood from the photo */}
           {result.description && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 mt-6">
+            <div className="flex items-center gap-2 text-sm text-gray-400 mt-6">
               <Sparkles size={15} className="text-orange" />
-              AI saw: <span className="font-semibold text-navy">"{result.description}"</span>
+              AI saw: <span className="font-semibold text-ink">"{result.description}"</span>
             </div>
           )}
           <div className="text-sm text-gray-500 mt-2 mb-3">{result.found} visually similar garments</div>

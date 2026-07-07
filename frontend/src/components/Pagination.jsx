@@ -10,8 +10,8 @@ export default function Pagination({ page, totalPages, onChange }) {
       >
         Previous
       </button>
-      <span className="text-sm text-gray-600">
-        Page <span className="font-semibold text-navy">{page}</span> of {totalPages}
+      <span className="text-sm text-gray-400">
+        Page <span className="font-semibold text-ink">{page}</span> of {totalPages}
       </span>
       <button
         className="btn-primary"

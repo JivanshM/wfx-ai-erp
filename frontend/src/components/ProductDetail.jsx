@@ -19,7 +19,7 @@ export default function ProductDetail({ styleNumber, onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl max-w-3xl w-full max-h-[88vh] overflow-y-auto"
+        className="bg-card rounded-xl max-w-3xl w-full max-h-[88vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {error && <div className="p-6 text-sm text-red-600">{error}</div>}
@@ -62,16 +62,16 @@ export default function ProductDetail({ styleNumber, onClose }) {
                     `${Math.round(((data.product.selling_price - data.product.cost) / data.product.cost) * 100)}%`,
                   ],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex justify-between border-b border-gray-100 py-1">
+                  <div key={label} className="flex justify-between border-b border-line py-1">
                     <span className="text-gray-500">{label}</span>
-                    <span className="font-medium text-navy">{value}</span>
+                    <span className="font-medium text-ink">{value}</span>
                   </div>
                 ))}
               </div>
 
               {/* Supplier */}
               <div className="text-sm mt-3 bg-workspace rounded-lg p-3">
-                <span className="font-semibold text-navy">{data.product.supplier_name}</span>
+                <span className="font-semibold text-ink">{data.product.supplier_name}</span>
                 <span className="text-gray-500">
                   {" "}· {data.product.supplier_country} · {data.product.lead_time_days} days lead time
                   · rating {data.product.supplier_rating}
@@ -81,7 +81,7 @@ export default function ProductDetail({ styleNumber, onClose }) {
               {/* Tech pack - the garment's technical specification */}
               {data.tech_pack && (
                 <div className="mt-4">
-                  <h3 className="text-sm font-semibold text-navy mb-2">Tech Pack</h3>
+                  <h3 className="text-sm font-semibold text-ink mb-2">Tech Pack</h3>
                   <div className="text-sm space-y-1">
                     <div><span className="text-gray-500">Fabric:</span> {data.tech_pack.fabric_details}</div>
                     <div><span className="text-gray-500">Construction:</span> {data.tech_pack.construction}</div>
@@ -92,7 +92,7 @@ export default function ProductDetail({ styleNumber, onClose }) {
 
               {/* Order history */}
               <div className="mt-4">
-                <h3 className="text-sm font-semibold text-navy mb-2">
+                <h3 className="text-sm font-semibold text-ink mb-2">
                   Orders: {data.order_summary.orders} · {fmt(data.order_summary.total_pieces)} pieces
                   · ₹{fmt(data.order_summary.total_value)}
                 </h3>
@@ -109,7 +109,7 @@ export default function ProductDetail({ styleNumber, onClose }) {
                     </thead>
                     <tbody>
                       {data.recent_orders.map((o) => (
-                        <tr key={o.order_number} className="border-t border-gray-100 hover:bg-[#f9fafb] transition-colors duration-200">
+                        <tr key={o.order_number} className="border-t border-line hover:bg-[#1e1f23] transition-colors duration-200">
                           <td className="py-1.5">{o.order_number}</td>
                           <td className="py-1.5">{o.buyer}</td>
                           <td className="py-1.5">{fmt(o.quantity)}</td>

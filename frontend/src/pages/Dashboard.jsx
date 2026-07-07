@@ -53,7 +53,7 @@ export default function Dashboard() {
         ) : (
           <div className="grid md:grid-cols-3 gap-3">
             {insights.insights.map((text, i) => (
-              <div key={i} className="bg-workspace rounded-lg p-3.5 text-sm text-gray-700">
+              <div key={i} className="bg-workspace rounded-lg p-3.5 text-sm text-gray-300">
                 {text}
               </div>
             ))}
@@ -69,9 +69,9 @@ export default function Dashboard() {
           <div className="space-y-3">
             {stats.revenue_by_currency.map((r) => (
               <div key={r.currency} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-600">{r.currency}</span>
+                <span className="text-sm font-medium text-gray-400">{r.currency}</span>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-navy">
+                  <div className="text-sm font-bold text-ink">
                     {CURRENCY_SYMBOL[r.currency]}{fmt(r.total_invoiced)}
                   </div>
                   <div className="text-[11px] text-gray-400">
@@ -88,10 +88,10 @@ export default function Dashboard() {
           <h2 className="section-title mb-4">Orders by Status</h2>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={stats.orders_by_status}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef1f5" />
-              <XAxis dataKey="status" tick={{ fontSize: 11 }} interval={0} angle={-20} dy={8} />
-              <YAxis tick={{ fontSize: 11 }} width={36} />
-              <Tooltip cursor={{ fill: "#f9fafb" }} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#26272b" />
+              <XAxis dataKey="status" tick={{ fontSize: 11, fill: "#9ca3af" }} interval={0} angle={-20} dy={8} />
+              <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} width={36} />
+              <Tooltip cursor={{ fill: "#1e1f23" }} contentStyle={{ background: "#1b1c1f", border: "1px solid #2a2b2f", borderRadius: 8, color: "#f4f4f5" }} labelStyle={{ color: "#f4f4f5" }} />
               {/* animation off: bars show instantly (also in screenshots/recordings) */}
               <Bar dataKey="count" fill="#ff6b35" radius={[6, 6, 0, 0]} isAnimationActive={false} />
             </BarChart>
@@ -105,12 +105,12 @@ export default function Dashboard() {
             {stats.orders_by_status.map((s) => (
               <div key={s.status}>
                 <div className="flex justify-between text-sm mb-1.5">
-                  <span className="text-gray-600">{s.status}</span>
-                  <span className="font-semibold text-navy">
+                  <span className="text-gray-400">{s.status}</span>
+                  <span className="font-semibold text-ink">
                     {Math.round((s.count / totalOrders) * 100)}%
                   </span>
                 </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-track rounded-full overflow-hidden">
                   <div
                     className="h-full bg-orange rounded-full transition-all duration-500"
                     style={{ width: `${(s.count / totalOrders) * 100}%` }}
@@ -132,10 +132,10 @@ export default function Dashboard() {
                   <stop offset="100%" stopColor="#ff6b35" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef1f5" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={3} />
-              <YAxis tick={{ fontSize: 11 }} width={36} />
-              <Tooltip cursor={{ stroke: "#d7dde5" }} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#26272b" />
+              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#9ca3af" }} interval={3} />
+              <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} width={36} />
+              <Tooltip cursor={{ stroke: "#3a3b40" }} contentStyle={{ background: "#1b1c1f", border: "1px solid #2a2b2f", borderRadius: 8, color: "#f4f4f5" }} labelStyle={{ color: "#f4f4f5" }} />
               <Area
                 type="monotone" dataKey="orders" stroke="#ff6b35" strokeWidth={2}
                 fill="url(#orangeFade)" isAnimationActive={false}
@@ -151,12 +151,12 @@ export default function Dashboard() {
             {stats.top_buyers.map((b) => (
               <div key={b.company_name}>
                 <div className="flex justify-between text-sm mb-1.5">
-                  <span className="text-gray-600 truncate pr-2">{b.company_name}</span>
-                  <span className="font-semibold text-navy whitespace-nowrap">
+                  <span className="text-gray-400 truncate pr-2">{b.company_name}</span>
+                  <span className="font-semibold text-ink whitespace-nowrap">
                     {fmt(b.pieces)} pcs
                   </span>
                 </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-track rounded-full overflow-hidden">
                   <div
                     className="h-full bg-navy rounded-full"
                     style={{ width: `${(b.pieces / maxBuyerPieces) * 100}%` }}
@@ -175,10 +175,10 @@ export default function Dashboard() {
             {stats.category_margins.slice(0, 6).map((c) => (
               <div key={c.category}>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">{c.category}</span>
-                  <span className="font-semibold text-navy">{c.margin_pct}%</span>
+                  <span className="text-gray-400">{c.category}</span>
+                  <span className="font-semibold text-ink">{c.margin_pct}%</span>
                 </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-track rounded-full overflow-hidden">
                   <div
                     className="h-full bg-orange rounded-full"
                     style={{ width: `${(c.margin_pct / maxMargin) * 100}%` }}
