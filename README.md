@@ -35,9 +35,12 @@ photo, and browse the catalog — without writing SQL or learning ERP screens.
 
 **Beyond the minimum**
 - **Image search by photo upload** — upload a garment photo, get visually similar products
+- **"Find similar" on every product card** — pure vector nearest-neighbour search over the embeddings
+- **NL2SQL confidence scores** — the model self-rates each generated query (with a reason) and the UI shows a colored badge
 - **Vector embeddings** for semantic search (Typesense `ts/e5-small-v2` auto-embedding)
 - Defense-in-depth safety for AI-generated SQL (three independent layers — see below)
 - Per-IP rate limiting and LLM call timeouts (cost control)
+- **Mobile-responsive layout** — slide-over navigation and adaptive grids on phones
 - Dashboard charts + design-system UI (Enterprise Dark: navy/orange, Plus Jakarta Sans)
 - Automatic search-index self-healing on startup + token-protected reindex endpoint
 
@@ -49,13 +52,13 @@ photo, and browse the catalog — without writing SQL or learning ERP screens.
 
 1. The React frontend POSTs the question to `POST /api/query` on the FastAPI backend.
 2. Vanna AI retrieves the most relevant training snippets (table definitions, business notes, example question→SQL pairs) from its local ChromaDB vector store.
-3. Those snippets + the question go to `gpt-4o-mini` via OpenRouter, which writes a SQL query.
+3. Those snippets + the question go to `gpt-4.1` via OpenRouter, which writes a SQL query.
 4. The backend validates the SQL (single read-only SELECT only), then executes it as a **read-only database user** with an 8-second time limit.
 5. The result rows go back to the LLM once more to produce a short plain-English answer.
 6. The frontend shows all four artifacts: question, generated SQL, result table, answer.
 
 **Image search flow:** the uploaded photo goes to a vision-capable model
-(`gpt-4o-mini`, low-detail mode) which writes a short product description —
+(`gpt-4.1`, low-detail mode) which writes a short product description —
 e.g. *"black oversized hoodie, solid, casual"* — and that description feeds the
 same semantic search as text queries. This deliberately reuses the existing
 vector index instead of running a separate CLIP model, which would not fit the
@@ -68,7 +71,7 @@ free search cluster's memory (trade-off documented below).
 | Database | Supabase (PostgreSQL) | Managed Postgres, RLS, connection pooling |
 | Backend | FastAPI (Python) | Simple, typed, auto-generated OpenAPI docs |
 | NL → SQL | Vanna AI 0.7.9 + ChromaDB | Open-source NL2SQL framework; retrieval-augmented SQL generation |
-| LLM | OpenRouter → `gpt-4o-mini` | Vision-capable, strong at SQL, very low cost |
+| LLM | OpenRouter → `gpt-4.1` | Excellent at SQL, vision-capable, still low-cost per query |
 | Search | Typesense Cloud | Typo tolerance + built-in vector embeddings (hybrid search) |
 | Frontend | React + Vite + Tailwind CSS | Fast dev loop, small bundle, design-system friendly |
 | Charts | Recharts | Simple declarative charts |
@@ -126,6 +129,7 @@ Interactive documentation with try-it-out: **[/docs](https://wfx-erp-api.onrende
 | GET | `/api/products/filters` | All filter options for the UI dropdowns |
 | POST | `/api/query` | Natural-language question → SQL → rows → answer |
 | GET | `/api/search?q=...` | Hybrid keyword + semantic product search |
+| GET | `/api/search/similar/{style_number}` | Vector nearest-neighbour "find similar" |
 | POST | `/api/search/by-image` | Photo upload → vision description → semantic search |
 | POST | `/api/search/reindex` | Rebuild search index (requires `X-Admin-Token` header) |
 
@@ -218,6 +222,6 @@ links like `/query`.
 - Vanna retrains on every server boot because the disk is ephemeral (fast — a few seconds — but a persistent vector store would allow accumulating user feedback as new training data).
 - Color vocabulary mismatch in image search (a "burgundy" photo vs the catalog's "Plum") — a color-normalization step or CLIP embeddings on a bigger cluster would improve ranking.
 - Streaming (word-by-word) answers in the AI Query screen.
-- NL2SQL confidence scores and query-result charts.
+- Automatic charts rendered from query results.
 - Docker Compose for one-command local setup, and CI on GitHub Actions.
 - Authentication and per-user query history.
