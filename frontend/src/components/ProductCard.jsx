@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { apiGet } from "../api.js";
+import ProductDetail from "./ProductDetail.jsx";
 
 // One garment in a results grid. Shows the fields the brief asks for:
 // image, style number, name, fabric, GSM, supplier, selling price.
@@ -10,6 +11,7 @@ export default function ProductCard({ product, showSimilar = true }) {
   const [open, setOpen] = useState(false);
   const [similar, setSimilar] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false); // full product popup
 
   async function findSimilar() {
     setOpen(true);
@@ -26,7 +28,10 @@ export default function ProductCard({ product, showSimilar = true }) {
 
   return (
     <div className="card overflow-hidden group hover:shadow-md transition-shadow duration-200">
-      <div className="aspect-[3/4] bg-gray-100 overflow-hidden relative">
+      <div
+        className="aspect-[3/4] bg-gray-100 overflow-hidden relative cursor-pointer"
+        onClick={() => setDetailOpen(true)}
+      >
         <img
           src={product.image_url}
           alt={product.style_name}
@@ -35,7 +40,7 @@ export default function ProductCard({ product, showSimilar = true }) {
         />
         {showSimilar && (
           <button
-            onClick={findSimilar}
+            onClick={(e) => { e.stopPropagation(); findSimilar(); }}
             className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5
                        bg-navy/80 text-white text-xs font-semibold px-3 py-1.5 rounded-full
                        backdrop-blur-sm hover:bg-orange transition-colors duration-200"
@@ -62,6 +67,11 @@ export default function ProductCard({ product, showSimilar = true }) {
           <span className="text-sm font-bold text-orange">₹{Number(product.selling_price).toFixed(0)}</span>
         </div>
       </div>
+
+      {/* Full product details popup */}
+      {detailOpen && (
+        <ProductDetail styleNumber={product.style_number} onClose={() => setDetailOpen(false)} />
+      )}
 
       {/* Similar-products popup */}
       {open && (
