@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Shirt, Factory, Users, ShoppingCart } from "lucide-react";
+import { Shirt, Factory, Users, ShoppingCart, Sparkles } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { apiGet } from "../api.js";
 import StatCard from "../components/StatCard.jsx";
@@ -12,15 +13,19 @@ const fmt = (n) => Number(n).toLocaleString("en-IN", { maximumFractionDigits: 0 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
+  const [insights, setInsights] = useState(null); // loads separately (slower)
 
   useEffect(() => {
     apiGet("/api/dashboard/stats").then(setStats).catch((e) => setError(e.message));
+    apiGet("/api/dashboard/insights").then(setInsights).catch(() => setInsights({ insights: [] }));
   }, []);
 
   if (error) return <div className="text-red-600">Could not load stats: {error}</div>;
   if (!stats) return <div className="text-gray-500">Loading dashboard...</div>;
 
   const totalOrders = stats.orders_by_status.reduce((sum, s) => sum + s.count, 0);
+  const maxBuyerPieces = Math.max(...stats.top_buyers.map((b) => b.pieces));
+  const maxMargin = Math.max(...stats.category_margins.map((c) => c.margin_pct));
 
   return (
     <div>
@@ -33,6 +38,27 @@ export default function Dashboard() {
         <StatCard icon={Factory} label="Suppliers" value={fmt(stats.total_suppliers)} />
         <StatCard icon={Users} label="Buyers" value={fmt(stats.total_buyers)} />
         <StatCard icon={ShoppingCart} label="Sales Orders" value={fmt(stats.total_orders)} />
+      </div>
+
+      {/* AI-written insights about the data */}
+      <div className="card p-5 mt-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles size={16} className="text-orange" />
+          <h2 className="section-title">AI Insights</h2>
+        </div>
+        {!insights ? (
+          <div className="text-sm text-gray-400">Analysing the data...</div>
+        ) : insights.insights.length === 0 ? (
+          <div className="text-sm text-gray-400">Insights unavailable right now.</div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-3">
+            {insights.insights.map((text, i) => (
+              <div key={i} className="bg-workspace rounded-lg p-3.5 text-sm text-gray-700">
+                {text}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid xl:grid-cols-3 gap-4 mt-4">
@@ -88,6 +114,74 @@ export default function Dashboard() {
                   <div
                     className="h-full bg-orange rounded-full transition-all duration-500"
                     style={{ width: `${(s.count / totalOrders) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Orders shipped per month - the trend over time */}
+        <div className="card p-5">
+          <h2 className="section-title mb-4">Monthly Order Volume</h2>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={stats.monthly_orders}>
+              <defs>
+                <linearGradient id="orangeFade" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ff6b35" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#ff6b35" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eef1f5" />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={3} />
+              <YAxis tick={{ fontSize: 11 }} width={36} />
+              <Tooltip cursor={{ stroke: "#d7dde5" }} />
+              <Area
+                type="monotone" dataKey="orders" stroke="#ff6b35" strokeWidth={2}
+                fill="url(#orangeFade)" isAnimationActive={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Top buyers by pieces ordered */}
+        <div className="card p-5">
+          <h2 className="section-title mb-4">Top Buyers by Volume</h2>
+          <div className="space-y-4">
+            {stats.top_buyers.map((b) => (
+              <div key={b.company_name}>
+                <div className="flex justify-between text-sm mb-1.5">
+                  <span className="text-gray-600 truncate pr-2">{b.company_name}</span>
+                  <span className="font-semibold text-navy whitespace-nowrap">
+                    {fmt(b.pieces)} pcs
+                  </span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-navy rounded-full"
+                    style={{ width: `${(b.pieces / maxBuyerPieces) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Average profit margin per category */}
+        <div className="card p-5">
+          <h2 className="section-title mb-1">Margin by Category</h2>
+          <p className="text-xs text-gray-400 mb-4">Average (selling − cost) / cost</p>
+          <div className="space-y-3">
+            {stats.category_margins.slice(0, 6).map((c) => (
+              <div key={c.category}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-600">{c.category}</span>
+                  <span className="font-semibold text-navy">{c.margin_pct}%</span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-orange rounded-full"
+                    style={{ width: `${(c.margin_pct / maxMargin) * 100}%` }}
                   />
                 </div>
               </div>
