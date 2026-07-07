@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { apiGet } from "../api.js";
 import StatCard from "../components/StatCard.jsx";
+import AskData from "../components/AskData.jsx";
 
 const CURRENCY_SYMBOL = { INR: "₹", USD: "$", EUR: "€", GBP: "£" };
 const fmt = (n) => Number(n).toLocaleString("en-IN", { maximumFractionDigits: 0 });
@@ -45,6 +46,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-2 mb-3">
           <Sparkles size={16} className="text-orange" />
           <h2 className="section-title">AI Insights</h2>
+          <AskData />
         </div>
         {!insights ? (
           <div className="text-sm text-gray-400">Analysing the data...</div>
