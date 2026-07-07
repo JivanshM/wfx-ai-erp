@@ -2,3 +2,10 @@ fastapi
 uvicorn[standard]
 psycopg2-binary
 python-dotenv
+# vanna 2.x changed the whole API; 0.7.x is the stable, documented line
+vanna[openai]==0.7.9
+# newer chromadb ships prebuilt wheels (no C++ compiler needed)
+chromadb>=1.0
+openai
+pandas
+typesense

@@ -9,6 +9,9 @@ __pycache__/
 *.pyc
 venv/
 
+# Vanna's local vector store (rebuilt automatically on startup)
+vanna_data/
+
 # Node / frontend dependencies (huge folders, restored by npm install)
 node_modules/
 dist/
