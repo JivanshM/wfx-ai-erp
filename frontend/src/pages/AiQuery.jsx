@@ -97,6 +97,19 @@ export default function AiQuery() {
 
             {!entry.loading && entry.success && (
               <div className="mt-3 space-y-3">
+                {/* Confidence: the model's own rating of its SQL */}
+                {entry.confidence != null && (
+                  <span
+                    title={entry.confidence_reason}
+                    className={`inline-block text-[11px] font-bold rounded-full px-2.5 py-1
+                      ${entry.confidence >= 80 ? "bg-green-100 text-green-700"
+                        : entry.confidence >= 50 ? "bg-amber-100 text-amber-700"
+                        : "bg-red-100 text-red-700"}`}
+                  >
+                    {entry.confidence}% confident
+                    {entry.confidence_reason && ` · ${entry.confidence_reason}`}
+                  </span>
+                )}
                 {/* AI answer */}
                 {entry.answer && <p className="text-sm text-gray-700">{entry.answer}</p>}
 
