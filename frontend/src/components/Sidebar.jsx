@@ -11,7 +11,7 @@ const links = [
   { to: "/explorer", label: "Goods Explorer", icon: Shirt },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }) {
   // Poll the backend every 15s so the status dot reflects real connectivity
   const [online, setOnline] = useState(null);
   useEffect(() => {
@@ -23,7 +23,17 @@ export default function Sidebar() {
   }, []);
 
   return (
-    <aside className="w-60 shrink-0 bg-navy text-white flex flex-col">
+    <>
+      {/* dark backdrop behind the slide-in menu (mobile only) */}
+      {open && (
+        <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={onClose} />
+      )}
+      <aside
+        className={`w-60 shrink-0 bg-navy text-white flex flex-col
+          fixed inset-y-0 left-0 z-40 transform transition-transform duration-200
+          md:static md:translate-x-0
+          ${open ? "translate-x-0" : "-translate-x-full"}`}
+      >
       <div className="px-5 py-6">
         <div className="text-xl font-extrabold tracking-tight">
           WFX <span className="text-orange">AI ERP</span>
@@ -37,6 +47,7 @@ export default function Sidebar() {
             key={to}
             to={to}
             end={to === "/"}
+            onClick={onClose}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                transition-colors duration-200
@@ -65,6 +76,7 @@ export default function Sidebar() {
           {online === null ? "Connecting..." : online ? "API connected" : "API offline"}
         </span>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

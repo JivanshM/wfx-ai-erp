@@ -40,7 +40,7 @@ export default function ProductSearch() {
         Search by meaning, not just keywords - try "warm winter jacket" or "blue floral dress"
       </p>
 
-      <div className="flex gap-2 max-w-2xl">
+      <div className="flex flex-col sm:flex-row gap-2 max-w-2xl">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
