@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------
+   Design system tokens ("Enterprise Dark")
+   These names become Tailwind classes: bg-navy, text-orange, ...
+   ------------------------------------------------------------ */
+@theme {
+  --color-navy: #1a2332;        /* structural dark blue (sidebar, headings) */
+  --color-navy-light: #2a3441;  /* lighter navy for hover / panels */
+  --color-orange: #ff6b35;      /* accent: buttons, active states, progress */
+  --color-workspace: #f5f7fa;   /* light-gray main background */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Reusable design-system pieces */
+
+/* Buttons: 8px radius + soft orange shadow */
+.btn-primary {
+  @apply bg-orange text-white text-sm font-semibold px-4 py-2 rounded-lg
+    shadow-lg shadow-orange/20 hover:bg-orange/90
+    transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* White content card */
+.card {
+  @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+}
+
+/* Inputs: focus = 1px orange border + ring effect */
+.input {
+  @apply w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white
+    outline-none transition-all duration-200
+    focus:border-orange focus:ring-2 focus:ring-orange/25;
+}
+
+/* Typography scale from the design spec */
+.page-title { @apply text-[30px] font-bold text-navy; }      /* headers 30px */
+.section-title { @apply text-lg font-semibold text-navy; }   /* sections 18px */
