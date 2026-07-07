@@ -128,9 +128,10 @@ def get_insights():
                         "as JSON:\n" + json.dumps(stats, default=str) + "\n\n"
                         "Write exactly 3 short insights a business manager would find "
                         "genuinely useful (trends, risks, standouts). Each under 25 words, "
-                        "specific, with real numbers from the data. Never add amounts of "
-                        "different currencies together. Reply with ONLY a JSON array of "
-                        "3 strings."
+                        "specific, with real numbers from the data. Write them in a fun, "
+                        "punchy tone - witty but professional, numbers always exact. "
+                        "Never add amounts of different currencies together. "
+                        "Reply with ONLY a JSON array of 3 strings."
                     ),
                 }
             ],

@@ -85,11 +85,11 @@ def ask(body: QueryRequest, request: Request):
     """
     ip = request.client.host if request.client else "unknown"
     if not rate_limit_ok(ip):
-        return {"success": False, "error": "Too many questions - wait a minute and try again."}
+        return {"success": False, "error": "Easy there, speed-racer! Ten questions a minute is the limit - catch your breath and try again."}
 
     question = body.question.strip()
     if not question:
-        return {"success": False, "error": "Question is empty."}
+        return {"success": False, "error": "You have to actually ask something - the data cannot read minds (yet)."}
 
     # Step 1: Vanna + the LLM write the SQL
     try:
@@ -107,7 +107,7 @@ def ask(body: QueryRequest, request: Request):
             return {
                 "success": False,
                 "sql": sql,
-                "error": "Only read-only SELECT queries are allowed - this data cannot be changed from here.",
+                "error": "Nice try! This data is strictly read-only - happy to spill its secrets, but nobody changes it from here.",
             }
         return {"success": False, "error": sql or "The model returned an empty response."}
 
@@ -116,7 +116,7 @@ def ask(body: QueryRequest, request: Request):
         return {
             "success": False,
             "sql": sql,
-            "error": "Only read-only SELECT queries are allowed.",
+            "error": "Nice try! This data is strictly read-only - happy to spill its secrets, but nobody changes it from here.",
         }
 
     # Step 3: run it as the read-only user, with an 8 second time limit,
@@ -124,7 +124,7 @@ def ask(body: QueryRequest, request: Request):
     try:
         rows = run_query(sql, readonly=True, timeout_ms=8000, max_rows=MAX_ROWS + 1)
     except Exception as exc:
-        return {"success": False, "sql": sql, "error": f"SQL failed to run: {exc}"}
+        return {"success": False, "sql": sql, "error": f"The database raised an eyebrow at that one: {exc}"}
 
     truncated = len(rows) > MAX_ROWS
     rows = rows[:MAX_ROWS]
