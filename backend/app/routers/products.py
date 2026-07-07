@@ -131,3 +131,57 @@ def list_products(
         "page_size": page_size,
         "total_pages": math.ceil(total / page_size) if total else 0,
     }
+
+
+# Defined AFTER "" and "/filters" so those fixed paths win the route match.
+@router.get("/{style_number}")
+def product_detail(style_number: str):
+    """Everything about one product: attributes, supplier, tech pack, order history."""
+    products = run_query(
+        """
+        select fg.*, s.company_name as supplier_name, s.country as supplier_country,
+               s.lead_time_days, s.rating as supplier_rating
+        from finished_goods fg
+        join suppliers s on s.supplier_id = fg.supplier_id
+        where fg.style_number = %s
+        """,
+        [style_number],
+    )
+    if not products:
+        raise HTTPException(404, f"Unknown product: {style_number}")
+
+    tech_packs = run_query(
+        "select fabric_details, construction, wash_instructions from tech_packs where style_number = %s",
+        [style_number],
+    )
+
+    order_summary = run_query(
+        """
+        select count(*)                       as orders,
+               coalesce(sum(quantity), 0)     as total_pieces,
+               coalesce(sum(quantity * unit_price), 0) as total_value
+        from sales_orders
+        where style_number = %s
+        """,
+        [style_number],
+    )[0]
+
+    recent_orders = run_query(
+        """
+        select o.order_number, b.company_name as buyer, o.quantity,
+               o.shipment_date, o.status
+        from sales_orders o
+        join buyers b on b.buyer_id = o.buyer_id
+        where o.style_number = %s
+        order by o.shipment_date desc
+        limit 5
+        """,
+        [style_number],
+    )
+
+    return {
+        "product": products[0],
+        "tech_pack": tech_packs[0] if tech_packs else None,
+        "order_summary": order_summary,
+        "recent_orders": recent_orders,
+    }
