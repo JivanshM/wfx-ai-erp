@@ -102,6 +102,13 @@ def ask(body: QueryRequest, request: Request):
     # as the error message instead of pretending it's a query.
     first_word = (sql.strip().split(None, 1) or [""])[0].lower()
     if first_word not in ("select", "with"):
+        if FORBIDDEN_WORDS.fullmatch(first_word):
+            # the question asked for a write (delete/update/...) - refuse clearly
+            return {
+                "success": False,
+                "sql": sql,
+                "error": "Only read-only SELECT queries are allowed - this data cannot be changed from here.",
+            }
         return {"success": False, "error": sql or "The model returned an empty response."}
 
     # Step 2: safety gate
