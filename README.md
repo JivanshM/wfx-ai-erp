@@ -37,6 +37,7 @@ photo, and browse the catalog — without writing SQL or learning ERP screens.
 - **Image search by photo upload** — upload a garment photo, get visually similar products
 - **"Find similar" on every product card** — pure vector nearest-neighbour search over the embeddings
 - **AI dashboard insights** — three LLM-written observations about the data (cached hourly), e.g. outstanding payments per currency or margin standouts
+- **"Ask the data" popup** — a one-shot question box right on the dashboard; answers with confidence badge and result table, resets when closed
 - **Product detail view** — click any garment: full attributes, computed margin, supplier profile, **tech pack**, and order history in one popup
 - **NL2SQL confidence scores** — the model self-rates each generated query (with a reason) and the UI shows a colored badge
 - **Vector embeddings** for semantic search (Typesense `ts/e5-small-v2` auto-embedding)
