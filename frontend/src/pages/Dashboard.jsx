@@ -66,7 +66,8 @@ export default function Dashboard() {
               <XAxis dataKey="status" tick={{ fontSize: 11 }} interval={0} angle={-20} dy={8} />
               <YAxis tick={{ fontSize: 11 }} width={36} />
               <Tooltip cursor={{ fill: "#f9fafb" }} />
-              <Bar dataKey="count" fill="#ff6b35" radius={[6, 6, 0, 0]} />
+              {/* animation off: bars show instantly (also in screenshots/recordings) */}
+              <Bar dataKey="count" fill="#ff6b35" radius={[6, 6, 0, 0]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </div>
