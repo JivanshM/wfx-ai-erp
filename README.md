@@ -43,6 +43,7 @@ photo, and browse the catalog — without writing SQL or learning ERP screens.
 - Defense-in-depth safety for AI-generated SQL (three independent layers — see below)
 - Per-IP rate limiting and LLM call timeouts (cost control)
 - **Mobile-responsive layout** — slide-over navigation and adaptive grids on phones
+- **High-contrast dark UI** — layered black surfaces, vibrant orange accent, Space Grotesk typography, pinned sidebar
 - Rich dashboard analytics: monthly order trend, top buyers by volume, margin by category, revenue per currency
 - Automatic search-index self-healing on startup + token-protected reindex endpoint
 
