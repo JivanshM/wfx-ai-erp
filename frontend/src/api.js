@@ -18,3 +18,12 @@ export async function apiPost(path, body) {
   if (!res.ok) throw new Error(`Request failed (${res.status})`);
   return res.json();
 }
+
+export async function apiUpload(path, formData) {
+  // no Content-Type header here: the browser sets the correct
+  // multipart boundary by itself when given a FormData body
+  const res = await fetch(API_URL + path, { method: "POST", body: formData });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || `Request failed (${res.status})`);
+  return data;
+}
