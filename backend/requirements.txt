@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
+python-multipart
 psycopg2-binary
 python-dotenv
 # vanna 2.x changed the whole API; 0.7.x is the stable, documented line

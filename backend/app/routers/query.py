@@ -1,8 +1,6 @@
 """Natural Language to SQL API - the main AI feature."""
 
 import re
-import time
-from collections import deque
 
 import pandas as pd
 from fastapi import APIRouter, Request
@@ -10,6 +8,7 @@ from pydantic import BaseModel
 
 from app import nl2sql
 from app.db import run_query
+from app.ratelimit import rate_limit_ok
 
 router = APIRouter(prefix="/api/query", tags=["ai query"])
 
@@ -22,22 +21,6 @@ FORBIDDEN_WORDS = re.compile(
 
 MAX_ROWS = 200      # never send huge result sets to the browser
 SUMMARY_ROWS = 30   # the LLM only needs a sample of rows to write the answer
-
-# Simple rate limit: every question costs real money on OpenRouter,
-# so each visitor (IP) gets at most 10 questions per minute.
-RATE_LIMIT, RATE_WINDOW = 10, 60
-_request_times: dict[str, deque] = {}
-
-
-def rate_limit_ok(ip: str) -> bool:
-    timestamps = _request_times.setdefault(ip, deque())
-    now = time.time()
-    while timestamps and now - timestamps[0] > RATE_WINDOW:
-        timestamps.popleft()
-    if len(timestamps) >= RATE_LIMIT:
-        return False
-    timestamps.append(now)
-    return True
 
 
 def is_safe_select(sql: str) -> bool:
