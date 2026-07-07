@@ -30,8 +30,8 @@ export default function Sidebar({ open, onClose }) {
       )}
       <aside
         className={`w-60 shrink-0 bg-navy text-white flex flex-col border-r border-line
-          fixed inset-y-0 left-0 z-40 transform transition-transform duration-200
-          md:static md:translate-x-0
+          fixed top-0 left-0 h-screen z-40 transform transition-transform duration-200
+          md:sticky md:translate-x-0
           ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
       <div className="px-5 py-6">
