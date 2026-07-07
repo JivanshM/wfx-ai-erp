@@ -1,0 +1,14 @@
+# Data files are confidential, so we do not commit them
+data/
+
+# Secrets (API keys) must never go into git
+.env
+
+# Python temporary files
+__pycache__/
+*.pyc
+venv/
+
+# Node / frontend dependencies (huge folders, restored by npm install)
+node_modules/
+dist/
