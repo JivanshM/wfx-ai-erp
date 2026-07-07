@@ -3,6 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routers import dashboard, products
+
 app = FastAPI(
     title="WFX AI ERP API",
     description="Backend for the AI-native ERP exploration platform",
@@ -16,6 +18,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(dashboard.router)
+app.include_router(products.router)
 
 
 @app.get("/health")
