@@ -1,12 +1,13 @@
 """Natural Language to SQL API - the main AI feature."""
 
+import json
 import re
 
 import pandas as pd
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
-from app import nl2sql
+from app import config, llm, nl2sql
 from app.db import run_query
 from app.ratelimit import rate_limit_ok
 
@@ -36,6 +37,39 @@ def is_safe_select(sql: str) -> bool:
     if first_word not in ("select", "with"):
         return False
     return not FORBIDDEN_WORDS.search(body)
+
+
+def rate_confidence(question, sql):
+    """Asks the model to self-rate the generated SQL (0-100).
+
+    Not a guarantee - just the model double-checking its own work,
+    which catches obvious mismatches between question and query.
+    """
+    try:
+        response = llm.client.chat.completions.create(
+            model=config.OPENROUTER_MODEL,
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        "A user asked this question about an apparel ERP database:\n"
+                        f"{question}\n\nThis SQL was generated to answer it:\n{sql}\n\n"
+                        "Rate from 0 to 100 how confident you are that the SQL correctly "
+                        "answers the question (right tables, filters, aggregations; "
+                        "beware of summing mixed currencies). Reply with ONLY this JSON: "
+                        '{"confidence": <number>, "reason": "<max 12 words>"}'
+                    ),
+                }
+            ],
+            max_tokens=60,
+            temperature=0,
+        )
+        text = response.choices[0].message.content.strip()
+        text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        data = json.loads(text)
+        return max(0, min(100, int(data["confidence"]))), str(data.get("reason", ""))
+    except Exception:
+        return None, None  # a missing score should never break the answer
 
 
 class QueryRequest(BaseModel):
@@ -96,6 +130,9 @@ def ask(body: QueryRequest, request: Request):
     except Exception:
         answer = None  # the result table alone is still useful
 
+    # Step 5: self-check - how well does the SQL match the question?
+    confidence, confidence_reason = rate_confidence(question, sql)
+
     return {
         "success": True,
         "question": question,
@@ -104,4 +141,6 @@ def ask(body: QueryRequest, request: Request):
         "row_count": len(rows),
         "truncated": truncated,
         "answer": answer,
+        "confidence": confidence,
+        "confidence_reason": confidence_reason,
     }
