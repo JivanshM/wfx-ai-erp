@@ -10,9 +10,9 @@ photo, and browse the catalog — without writing SQL or learning ERP screens.
 | **Live backend** | https://wfx-erp-api.onrender.com |
 | **Interactive API docs** | https://wfx-erp-api.onrender.com/docs |
 
-> **Note:** the backend runs on Render's free tier, which puts idle services to
-> sleep. The first request after a quiet period can take ~30-60 seconds while
-> the server wakes up — every request after that is fast.
+> The backend runs on Render's free tier, which puts idle services to sleep.
+> The first request after a quiet period can take ~30-60 seconds while the
+> server wakes up — every request after that is fast.
 
 ## Screenshots
 
@@ -77,7 +77,7 @@ free search cluster's memory (trade-off documented below).
 | Charts | Recharts | Simple declarative charts |
 | Hosting | Render (API) + Vercel (frontend) | As required by the brief |
 
-Version note: Vanna is pinned to **0.7.9** — the stable, documented API line
+Vanna is pinned to **0.7.9** — the stable, documented API line
 (`vanna.chromadb` / `vanna.openai`). The 2.x rewrite changed the whole API
 surface. ChromaDB is installed `>=1.0` because older versions need a C++
 compiler on Windows; the embedding function is instantiated once and shared to
