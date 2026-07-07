@@ -36,12 +36,14 @@ photo, and browse the catalog — without writing SQL or learning ERP screens.
 **Beyond the minimum**
 - **Image search by photo upload** — upload a garment photo, get visually similar products
 - **"Find similar" on every product card** — pure vector nearest-neighbour search over the embeddings
+- **AI dashboard insights** — three LLM-written observations about the data (cached hourly), e.g. outstanding payments per currency or margin standouts
+- **Product detail view** — click any garment: full attributes, computed margin, supplier profile, **tech pack**, and order history in one popup
 - **NL2SQL confidence scores** — the model self-rates each generated query (with a reason) and the UI shows a colored badge
 - **Vector embeddings** for semantic search (Typesense `ts/e5-small-v2` auto-embedding)
 - Defense-in-depth safety for AI-generated SQL (three independent layers — see below)
 - Per-IP rate limiting and LLM call timeouts (cost control)
 - **Mobile-responsive layout** — slide-over navigation and adaptive grids on phones
-- Dashboard charts + design-system UI (Enterprise Dark: navy/orange, Plus Jakarta Sans)
+- Rich dashboard analytics: monthly order trend, top buyers by volume, margin by category, revenue per currency
 - Automatic search-index self-healing on startup + token-protected reindex endpoint
 
 ## System Architecture
@@ -124,9 +126,11 @@ Interactive documentation with try-it-out: **[/docs](https://wfx-erp-api.onrende
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/health` | Liveness check (used by the frontend status dot) |
-| GET | `/api/dashboard/stats` | Totals, revenue per currency, orders by status |
+| GET | `/api/dashboard/stats` | Totals, revenue per currency, order trends, buyers, margins |
+| GET | `/api/dashboard/insights` | Three AI-written observations about the data (cached 1h) |
 | GET | `/api/products` | Filtered, sorted, paginated product list |
 | GET | `/api/products/filters` | All filter options for the UI dropdowns |
+| GET | `/api/products/{style_number}` | Product detail: attributes, tech pack, order history |
 | POST | `/api/query` | Natural-language question → SQL → rows → answer |
 | GET | `/api/search?q=...` | Hybrid keyword + semantic product search |
 | GET | `/api/search/similar/{style_number}` | Vector nearest-neighbour "find similar" |
