@@ -1,0 +1,28 @@
+name: backend ci
+
+on:
+  push:
+    branches: [backend]
+  pull_request:
+    branches: [backend]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: install dependencies
+        run: pip install -r requirements.txt
+
+      - name: check for syntax errors
+        run: python -m compileall -q app

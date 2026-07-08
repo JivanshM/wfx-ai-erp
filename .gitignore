@@ -15,3 +15,8 @@ vanna_data/
 # Node / frontend dependencies (huge folders, restored by npm install)
 node_modules/
 dist/
+
+# Local editor/tool config, never part of the product
+.claude/
+.vscode/
+.idea/
