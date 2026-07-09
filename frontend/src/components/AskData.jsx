@@ -97,13 +97,10 @@ function AskDataPopup({ onClose }) {
           </div>
         )}
 
-        {/* Bad question, unsafe SQL, rate limit, server down - all land here */}
+        {/* Bad question, unsafe query, rate limit, server down - all land here */}
         {result && !result.success && (
           <div className="mt-4 text-sm bg-red-500/10 text-red-300 rounded-lg p-3">
             <span className="font-semibold">Hmm, that one stumped us:</span> {result.error}
-            {result.sql && (
-              <pre className="mt-2 text-xs bg-navy text-orange/90 rounded-lg p-3 overflow-x-auto">{result.sql}</pre>
-            )}
           </div>
         )}
 
@@ -122,12 +119,6 @@ function AskDataPopup({ onClose }) {
             )}
             {result.answer && <p className="text-sm text-gray-300">{result.answer}</p>}
             <DataTable rows={result.rows} />
-            <details>
-              <summary className="text-xs font-semibold text-gray-500 cursor-pointer hover:text-orange transition-colors duration-200">
-                View generated SQL
-              </summary>
-              <pre className="mt-2 text-xs bg-navy text-green-300 rounded-lg p-3 overflow-x-auto">{result.sql}</pre>
-            </details>
           </div>
         )}
       </div>

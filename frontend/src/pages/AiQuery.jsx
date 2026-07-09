@@ -82,16 +82,13 @@ export default function AiQuery() {
             {entry.loading && (
               <div className="flex items-center gap-2 text-sm text-gray-500 mt-3">
                 <Loader2 size={15} className="animate-spin text-orange" />
-                Thinking - generating SQL...
+                Thinking...
               </div>
             )}
 
             {!entry.loading && !entry.success && (
               <div className="mt-3 text-sm bg-red-500/10 text-red-300 rounded-lg p-3">
                 {entry.error}
-                {entry.sql && (
-                  <pre className="mt-2 text-xs bg-navy text-orange/90 rounded-lg p-3 overflow-x-auto">{entry.sql}</pre>
-                )}
               </div>
             )}
 
@@ -112,14 +109,6 @@ export default function AiQuery() {
                 )}
                 {/* AI answer */}
                 {entry.answer && <p className="text-sm text-gray-300">{entry.answer}</p>}
-
-                {/* Generated SQL, collapsible */}
-                <details className="group">
-                  <summary className="text-xs font-semibold text-gray-500 cursor-pointer hover:text-orange transition-colors duration-200">
-                    View generated SQL
-                  </summary>
-                  <pre className="mt-2 text-xs bg-navy text-green-300 rounded-lg p-3 overflow-x-auto">{entry.sql}</pre>
-                </details>
 
                 {/* Result table */}
                 <DataTable rows={entry.rows} />
