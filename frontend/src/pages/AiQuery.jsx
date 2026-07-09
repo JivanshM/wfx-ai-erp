@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { apiPost } from "../api.js";
 import DataTable from "../components/DataTable.jsx";
-import ProductDetail from "../components/ProductDetail.jsx";
+import ProductCard from "../components/ProductCard.jsx";
 
 const SAMPLE_QUESTIONS = [
   "Show all black hoodies under 900",
@@ -14,7 +14,6 @@ const SAMPLE_QUESTIONS = [
 export default function AiQuery() {
   const [question, setQuestion] = useState("");
   const [entries, setEntries] = useState([]); // one entry per asked question
-  const [detail, setDetail] = useState(null); // style_number of the open product popup
 
   async function ask(q) {
     const text = (q ?? question).trim();
@@ -112,8 +111,15 @@ export default function AiQuery() {
                 {/* AI answer */}
                 {entry.answer && <p className="text-sm text-gray-300">{entry.answer}</p>}
 
-                {/* Result table - product rows open the full detail popup */}
-                <DataTable rows={entry.rows} onProductClick={setDetail} />
+                {/* Product results render as Explorer-style cards (click for
+                    full detail); anything else stays a plain table. */}
+                {entry.products?.length ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
+                    {entry.products.map((p) => <ProductCard key={p.style_number} product={p} />)}
+                  </div>
+                ) : (
+                  <DataTable rows={entry.rows} />
+                )}
                 <div className="text-xs text-gray-400">
                   {entry.row_count} row{entry.row_count === 1 ? "" : "s"}
                   {entry.truncated && " (showing first 200)"}
@@ -123,8 +129,6 @@ export default function AiQuery() {
           </div>
         ))}
       </div>
-
-      {detail && <ProductDetail styleNumber={detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }
