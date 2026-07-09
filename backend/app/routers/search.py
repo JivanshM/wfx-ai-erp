@@ -20,6 +20,16 @@ MAX_IMAGE_BYTES = 4 * 1024 * 1024  # 4 MB
 IMAGE_QUERY_BY = "style_name,category,color,print,embedding"
 IMAGE_QUERY_BY_WEIGHTS = "2,5,4,3,2"
 
+# Maps an incoming filter param to the Typesense facet field it constrains.
+# Lets the Explorer narrow a search the same way its dropdowns narrow a browse.
+FILTERABLE = {
+    "category": "category",
+    "fabric": "fabric",
+    "color": "color",
+    "season": "season",
+    "supplier": "supplier_name",
+}
+
 # Distinct category/color values, loaded once from the DB and cached, so the
 # vision model can only pick tags that actually exist in the catalog.
 _vocab_cache = None
@@ -40,12 +50,27 @@ def format_hits(result):
     return hits
 
 
-def run_search(q, limit, category=None, query_by=None, query_by_weights=None):
-    """The one place that actually talks to Typesense (both endpoints use it).
+def build_filter_by(filters):
+    """Turns {param: value} into a Typesense filter_by string.
 
-    query_by / query_by_weights let a caller override which fields are matched
-    and how strongly they rank; text search uses the defaults, image search
-    passes its own visual-field weighting.
+    Only known facet fields are used, and each value is wrapped in backticks
+    so names with spaces ("French Terry", "Sky Blue") filter correctly.
+    """
+    parts = []
+    for param, field in FILTERABLE.items():
+        value = filters.get(param)
+        if value:
+            parts.append(f"{field}:=`{value}`")
+    return " && ".join(parts)
+
+
+def run_search(q, limit, filters=None, page=1, query_by=None, query_by_weights=None):
+    """The one place that actually talks to Typesense (every endpoint uses it).
+
+    filters narrows the results to matching facet values (category, fabric,
+    color, season, supplier); page paginates; query_by / query_by_weights let
+    a caller override which fields are matched and how strongly they rank
+    (image search passes its own visual-field weighting).
     """
     if search_index.client is None:
         raise HTTPException(503, "Search is not configured on this server.")
@@ -55,28 +80,38 @@ def run_search(q, limit, category=None, query_by=None, query_by_weights=None):
         # listing "embedding" here is what turns on hybrid (semantic) search
         "query_by": query_by or "style_name,category,fabric,color,print,brand,embedding",
         "per_page": limit,
+        "page": page,
         "exclude_fields": "embedding",  # don't send 384 floats back to the browser
     }
     if query_by_weights:
         # make some fields (e.g. category) outweigh others when ranking matches
         search_params["query_by_weights"] = query_by_weights
-    if category:
-        search_params["filter_by"] = f"category:={category}"
+    filter_by = build_filter_by(filters or {})
+    if filter_by:
+        search_params["filter_by"] = filter_by
 
     result = search_index.client.collections[search_index.COLLECTION].documents.search(
         search_params
     )
-    return {"query": q, "found": result["found"], "hits": format_hits(result)}
+    return {"query": q, "found": result["found"], "page": page, "hits": format_hits(result)}
 
 
 @router.get("")
 def search_products(
     q: str = Query(..., min_length=1, description="e.g. 'blue floral dress'"),
-    limit: int = Query(12, ge=1, le=50),
+    limit: int = Query(24, ge=1, le=50),
+    page: int = Query(1, ge=1),
     category: str | None = None,
+    fabric: str | None = None,
+    color: str | None = None,
+    season: str | None = None,
+    supplier: str | None = None,
 ):
-    """Searches products by keywords AND meaning at the same time."""
-    return run_search(q, limit, category)
+    """Searches products by keywords AND meaning, narrowed by the same facet
+    filters the Explorer offers, and paginated so it can drive that screen."""
+    filters = {"category": category, "fabric": fabric, "color": color,
+               "season": season, "supplier": supplier}
+    return run_search(q, limit, filters=filters, page=page)
 
 
 @router.get("/similar/{style_number}")
