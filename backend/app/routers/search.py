@@ -75,14 +75,25 @@ def run_search(q, limit, filters=None, page=1, query_by=None, query_by_weights=N
     if search_index.client is None:
         raise HTTPException(503, "Search is not configured on this server.")
 
+    qb = query_by or "style_name,category,fabric,color,print,brand,embedding"
     search_params = {
         "q": q,
         # listing "embedding" here is what turns on hybrid (semantic) search
-        "query_by": query_by or "style_name,category,fabric,color,print,brand,embedding",
+        "query_by": qb,
         "per_page": limit,
         "page": page,
         "exclude_fields": "embedding",  # don't send 384 floats back to the browser
     }
+    # Domain vocabulary: "tee" -> T-Shirt, "jumper"/"pullover" -> Sweatshirt.
+    # Only referenced once the set is confirmed built, or Typesense errors.
+    if search_index.synonyms_ready:
+        search_params["synonym_sets"] = search_index.SYNONYM_SET
+    if "embedding" in qb:
+        # Cap the semantic neighbours. Without this, a vague query drags in a
+        # long tail of ~100 loosely-related items (inflating the result count);
+        # capping keeps the count honest and the tail relevant. Keyword matches
+        # are unaffected, so precise queries still return everything.
+        search_params["vector_query"] = "embedding:([], k: 40)"
     if query_by_weights:
         # make some fields (e.g. category) outweigh others when ranking matches
         search_params["query_by_weights"] = query_by_weights

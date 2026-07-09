@@ -8,12 +8,33 @@ BOTH keywords and meaning (hybrid search), so "blue floral dress" finds
 relevant garments even without exact word matches.
 """
 
+import json
+import urllib.request
+
 import typesense
 
 from app import config
 from app.db import run_query
 
 COLLECTION = "products"
+
+# Domain synonyms so real shopper words hit the right category:
+# "tee" -> T-Shirt, "jumper"/"pullover" -> Sweatshirt, "pants" -> Trousers.
+# Typesense v28+ stores these as a top-level "synonym set" that searches
+# reference at query time (see run_search). Kept in code so a fresh deploy
+# rebuilds them automatically.
+SYNONYM_SET = "apparel"
+SYNONYMS = [
+    {"id": "tee", "synonyms": ["tee", "tees", "tshirt", "t-shirt"]},
+    {"id": "sweatshirt", "synonyms": ["jumper", "pullover", "sweater", "sweatshirt", "jersey"]},
+    {"id": "trousers", "synonyms": ["pants", "trousers", "slacks", "chinos"]},
+    {"id": "jeans", "synonyms": ["jeans", "denim", "denims"]},
+    {"id": "hoodie", "synonyms": ["hoodie", "hoody", "hooded"]},
+    {"id": "jacket", "synonyms": ["jacket", "coat", "blazer", "outerwear"]},
+]
+# Flipped on once the set is confirmed live, so a search never asks Typesense
+# for a synonym set that failed to build (which would error the query).
+synonyms_ready = False
 
 # Built inside try/except: with no API key the constructor raises,
 # and that must disable search only - not the whole backend.
@@ -105,9 +126,38 @@ def reindex():
     return {"indexed": len(docs) - len(failed), "failed": len(failed)}
 
 
+def ensure_synonyms():
+    """Upsert the apparel synonym set (idempotent).
+
+    The v30 synonym-set API isn't in the Python client yet, so this makes the
+    raw HTTPS call. Best-effort: if it fails, search still works, just without
+    the "tee -> T-Shirt" style vocabulary mapping.
+    """
+    global synonyms_ready
+    url = f"https://{config.TYPESENSE_HOST}/synonym_sets/{SYNONYM_SET}"
+    req = urllib.request.Request(
+        url,
+        method="PUT",
+        data=json.dumps({"items": SYNONYMS}).encode(),
+        headers={
+            "X-TYPESENSE-API-KEY": config.TYPESENSE_API_KEY,
+            "Content-Type": "application/json",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        resp.read()
+    synonyms_ready = True
+    print(f"Typesense: synonym set '{SYNONYM_SET}' ready ({len(SYNONYMS)} groups)")
+
+
 def ensure_ready():
-    """Called at server startup: builds the index only if it's missing."""
+    """Called at server startup: builds the index only if it's missing,
+    then makes sure the synonym set exists."""
     if client is None:
         raise RuntimeError("Typesense is not configured (missing host/api key)")
     if not collection_exists():
         reindex()
+    try:
+        ensure_synonyms()
+    except Exception as exc:
+        print(f"WARNING: synonym setup failed, search runs without synonyms: {exc}")
