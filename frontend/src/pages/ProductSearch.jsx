@@ -47,25 +47,29 @@ export default function ProductSearch() {
         Search by meaning, not just keywords - try "warm winter jacket" or "blue floral dress"
       </p>
 
-      {/* Full-width search bar so it lines up with the results grid below */}
+      {/* Full-width search bar so it lines up with the results grid below.
+          The select is wrapped in a fixed-width box because .input already
+          carries w-full, which would otherwise swallow the whole row. */}
       <div className="card p-4 flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
-            className="input pl-9 w-full"
+            className="input pl-9"
             placeholder="Describe what you're looking for..."
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}
           />
         </div>
-        <select
-          className="input sm:w-44"
-          value={category}
-          onChange={(e) => { setCategory(e.target.value); setPage(1); }}
-        >
-          <option value="">All categories</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <div className="w-full sm:w-44 shrink-0">
+          <select
+            className="input"
+            value={category}
+            onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
       </div>
 
       {loading && <div className="text-sm text-gray-500 mt-6">Searching...</div>}

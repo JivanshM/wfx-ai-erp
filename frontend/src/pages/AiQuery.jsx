@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { apiPost } from "../api.js";
 import DataTable from "../components/DataTable.jsx";
+import ProductDetail from "../components/ProductDetail.jsx";
 
 const SAMPLE_QUESTIONS = [
   "Show all black hoodies under 900",
@@ -13,6 +14,7 @@ const SAMPLE_QUESTIONS = [
 export default function AiQuery() {
   const [question, setQuestion] = useState("");
   const [entries, setEntries] = useState([]); // one entry per asked question
+  const [detail, setDetail] = useState(null); // style_number of the open product popup
 
   async function ask(q) {
     const text = (q ?? question).trim();
@@ -110,8 +112,8 @@ export default function AiQuery() {
                 {/* AI answer */}
                 {entry.answer && <p className="text-sm text-gray-300">{entry.answer}</p>}
 
-                {/* Result table */}
-                <DataTable rows={entry.rows} />
+                {/* Result table - product rows open the full detail popup */}
+                <DataTable rows={entry.rows} onProductClick={setDetail} />
                 <div className="text-xs text-gray-400">
                   {entry.row_count} row{entry.row_count === 1 ? "" : "s"}
                   {entry.truncated && " (showing first 200)"}
@@ -121,6 +123,8 @@ export default function AiQuery() {
           </div>
         ))}
       </div>
+
+      {detail && <ProductDetail styleNumber={detail} onClose={() => setDetail(null)} />}
     </div>
   );
 }
