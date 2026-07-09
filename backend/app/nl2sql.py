@@ -158,6 +158,95 @@ EXAMPLE_PAIRS = [
         "How many orders are currently in production?",
         "select count(*) as orders_in_production from sales_orders where status = 'In Production'",
     ),
+    (
+        "How many products are there in each category?",
+        """select category, count(*) as products
+           from finished_goods
+           group by category
+           order by products desc""",
+    ),
+    (
+        "Which product category has the best average profit margin?",
+        """select category,
+                  round(avg((selling_price - cost) / cost * 100), 1) as avg_margin_pct
+           from finished_goods
+           group by category
+           order by avg_margin_pct desc""",
+    ),
+    (
+        "List suppliers by rating and lead time",
+        """select company_name, country, rating, lead_time_days
+           from suppliers
+           order by rating desc, lead_time_days asc""",
+    ),
+    (
+        "Show total revenue by buyer segment",
+        """select b.buyer_category, i.currency, sum(i.amount) as revenue
+           from sales_invoices i
+           join sales_orders o on o.order_number = i.order_number
+           join buyers b on b.buyer_id = o.buyer_id
+           group by b.buyer_category, i.currency
+           order by revenue desc""",
+    ),
+    (
+        "What are the top 5 best-selling products by quantity?",
+        """select fg.style_number, fg.style_name, fg.category, sum(o.quantity) as units_sold
+           from sales_orders o
+           join finished_goods fg on fg.style_number = o.style_number
+           group by fg.style_number, fg.style_name, fg.category
+           order by units_sold desc
+           limit 5""",
+    ),
+    (
+        "Which buyers have the most overdue invoices?",
+        """select b.company_name, count(*) as overdue_invoices
+           from sales_invoices i
+           join sales_orders o on o.order_number = i.order_number
+           join buyers b on b.buyer_id = o.buyer_id
+           where i.payment_status = 'Overdue'
+           group by b.company_name
+           order by overdue_invoices desc""",
+    ),
+    (
+        "How many orders were shipped each month?",
+        """select to_char(date_trunc('month', shipment_date), 'YYYY-MM') as month,
+                  count(*) as orders, sum(quantity) as pieces
+           from sales_orders
+           group by 1
+           order by 1""",
+    ),
+    (
+        "How many suppliers are there in each country?",
+        """select country, count(*) as suppliers
+           from suppliers
+           group by country
+           order by suppliers desc""",
+    ),
+    (
+        "What is the average selling price by season?",
+        """select season, count(*) as products, round(avg(selling_price), 2) as avg_price
+           from finished_goods
+           group by season
+           order by season""",
+    ),
+    (
+        "Which products had the most cancelled orders?",
+        """select fg.style_number, fg.style_name, count(*) as cancelled_orders
+           from sales_orders o
+           join finished_goods fg on fg.style_number = o.style_number
+           where o.status = 'Cancelled'
+           group by fg.style_number, fg.style_name
+           order by cancelled_orders desc
+           limit 10""",
+    ),
+    (
+        "Show the fabric and construction details for style WFX-2501",
+        """select fg.style_number, fg.style_name, tp.fabric_details,
+                  tp.construction, tp.wash_instructions
+           from tech_packs tp
+           join finished_goods fg on fg.style_number = tp.style_number
+           where fg.style_number = 'WFX-2501'""",
+    ),
 ]
 
 
