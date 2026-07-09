@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, MessageSquareText, Search, Image, Shirt, Factory } from "lucide-react";
+import { LayoutDashboard, MessageSquareText, Search, Image, Shirt, Factory, Users } from "lucide-react";
 import { apiGet } from "../api.js";
 
 const links = [
@@ -10,6 +10,7 @@ const links = [
   { to: "/image-search", label: "Image Search", icon: Image },
   { to: "/explorer", label: "Goods Explorer", icon: Shirt },
   { to: "/suppliers", label: "Suppliers", icon: Factory },
+  { to: "/buyers", label: "Buyers", icon: Users },
 ];
 
 export default function Sidebar({ open, onClose }) {

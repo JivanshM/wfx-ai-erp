@@ -10,6 +10,7 @@ import ProductSearch from "./pages/ProductSearch.jsx";
 import ImageSearch from "./pages/ImageSearch.jsx";
 import Explorer from "./pages/Explorer.jsx";
 import SupplierScorecard from "./pages/SupplierScorecard.jsx";
+import BuyerScorecard from "./pages/BuyerScorecard.jsx";
 
 // All pages share the App layout (sidebar + workspace area)
 createRoot(document.getElementById("root")).render(
@@ -23,6 +24,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/image-search" element={<ImageSearch />} />
           <Route path="/explorer" element={<Explorer />} />
           <Route path="/suppliers" element={<SupplierScorecard />} />
+          <Route path="/buyers" element={<BuyerScorecard />} />
         </Route>
       </Routes>
     </BrowserRouter>
