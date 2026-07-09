@@ -13,8 +13,8 @@ export default function AskData() {
       <button
         onClick={() => setOpen(true)}
         className="ml-auto flex items-center gap-2 text-xs font-semibold text-orange
-                   bg-orange/10 hover:bg-orange/20 rounded-lg px-3 py-2
-                   transition-colors duration-200"
+                   bg-orange/10 border border-orange/40 hover:bg-orange/20 hover:border-orange/70
+                   rounded-lg px-3 py-2 transition-colors duration-200"
       >
         <Lightbulb size={14} /> Ask the data anything
       </button>
