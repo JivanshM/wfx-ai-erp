@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import dashboard, products, query, search
+from app.routers import dashboard, products, query, search, suppliers
 
 
 @asynccontextmanager
@@ -48,6 +48,7 @@ app.include_router(dashboard.router)
 app.include_router(products.router)
 app.include_router(query.router)
 app.include_router(search.router)
+app.include_router(suppliers.router)
 
 
 @app.get("/health")
