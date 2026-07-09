@@ -16,7 +16,6 @@ vanna_data/
 node_modules/
 dist/
 
-# Local editor/tool config, never part of the product
-.claude/
+# Local editor config, never part of the product
 .vscode/
 .idea/
