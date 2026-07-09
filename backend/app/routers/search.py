@@ -1,16 +1,28 @@
 """Product search API - powered by Typesense (keyword + semantic hybrid)."""
 
 import base64
+import json
 
 from fastapi import APIRouter, File, Header, HTTPException, Query, Request, UploadFile
 
 from app import config, llm, search_index
+from app.db import run_query
 from app.ratelimit import rate_limit_ok
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 
 ALLOWED_IMAGE_TYPES = ("image/jpeg", "image/png", "image/webp")
 MAX_IMAGE_BYTES = 4 * 1024 * 1024  # 4 MB
+
+# Fields the uploaded-photo search matches on, and how strongly. Only visually
+# obvious traits are used (no fabric/brand - you can't read those off a photo).
+# category is boosted hardest, then color, then print.
+IMAGE_QUERY_BY = "style_name,category,color,print,embedding"
+IMAGE_QUERY_BY_WEIGHTS = "2,5,4,3,2"
+
+# Distinct category/color values, loaded once from the DB and cached, so the
+# vision model can only pick tags that actually exist in the catalog.
+_vocab_cache = None
 
 
 def format_hits(result):
@@ -28,18 +40,26 @@ def format_hits(result):
     return hits
 
 
-def run_search(q, limit, category=None):
-    """The one place that actually talks to Typesense (both endpoints use it)."""
+def run_search(q, limit, category=None, query_by=None, query_by_weights=None):
+    """The one place that actually talks to Typesense (both endpoints use it).
+
+    query_by / query_by_weights let a caller override which fields are matched
+    and how strongly they rank; text search uses the defaults, image search
+    passes its own visual-field weighting.
+    """
     if search_index.client is None:
         raise HTTPException(503, "Search is not configured on this server.")
 
     search_params = {
         "q": q,
         # listing "embedding" here is what turns on hybrid (semantic) search
-        "query_by": "style_name,category,fabric,color,print,brand,embedding",
+        "query_by": query_by or "style_name,category,fabric,color,print,brand,embedding",
         "per_page": limit,
         "exclude_fields": "embedding",  # don't send 384 floats back to the browser
     }
+    if query_by_weights:
+        # make some fields (e.g. category) outweigh others when ranking matches
+        search_params["query_by_weights"] = query_by_weights
     if category:
         search_params["filter_by"] = f"category:={category}"
 
@@ -85,6 +105,111 @@ def similar_products(style_number: str, limit: int = Query(8, ge=1, le=24)):
     return {"style_number": style_number, "found": result["found"], "hits": format_hits(result)}
 
 
+def catalog_vocab():
+    """Distinct category and color values from the catalog, cached in memory.
+
+    Loaded once (lazily) and reused. On a DB error we return empty lists
+    WITHOUT caching them, so image search just free-forms (the old behaviour)
+    and self-heals on the next request instead of staying degraded.
+    """
+    global _vocab_cache
+    if _vocab_cache is not None:
+        return _vocab_cache
+    try:
+        vocab = {}
+        for field in ("category", "color"):
+            rows = run_query(
+                f"select distinct {field} as v from finished_goods "
+                f"where {field} is not null and {field} <> '' order by v"
+            )
+            vocab[field] = [r["v"] for r in rows]
+    except Exception as exc:
+        print(f"WARNING: could not load catalog vocab, image search will free-form: {exc}")
+        return {"category": [], "color": []}
+    _vocab_cache = vocab
+    return _vocab_cache
+
+
+def describe_garment(content_type, b64):
+    """Vision model tags the photo using ONLY real catalog values.
+
+    Returns {category, color, print, keywords}. Grounding the model in the
+    actual vocabulary means each value maps onto a product field, so we can
+    safely boost it in ranking without inventing a category that matches
+    nothing.
+    """
+    vocab = catalog_vocab()
+    prompt = (
+        "You are tagging a garment PHOTO for a fashion catalog search. "
+        "Return ONLY a JSON object with keys category, color, print, keywords.\n"
+        f"- category: the single closest from {vocab['category']} or \"\" if unclear.\n"
+        f"- color: the single closest from {vocab['color']} or \"\".\n"
+        '- print: "Printed" if it has any pattern/graphic/stripe/floral, else "Solid".\n'
+        "- keywords: up to 6 words for shape/style/details.\n"
+        "Choose category and color ONLY from the given lists. Reply with JSON only."
+    )
+    response = llm.client.chat.completions.create(
+        model=config.OPENROUTER_MODEL,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        # detail:"low" = the model sees a small version, plenty
+                        # for tagging a garment and it keeps the token cost tiny
+                        "image_url": {
+                            "url": f"data:{content_type};base64,{b64}",
+                            "detail": "low",
+                        },
+                    },
+                ],
+            }
+        ],
+        max_tokens=120,
+        temperature=0,
+        response_format={"type": "json_object"},
+    )
+    return parse_attrs(response.choices[0].message.content or "")
+
+
+def parse_attrs(raw):
+    """Best-effort parse of the model's JSON reply into clean string fields."""
+    text = raw.strip()
+    if text.startswith("```"):  # tolerate ```json ... ``` fences
+        text = text.strip("`")
+        if text[:4].lower() == "json":
+            text = text[4:]
+    try:
+        data = json.loads(text)
+    except (ValueError, TypeError):
+        data = {}
+    attrs = {}
+    for key in ("category", "color", "print"):
+        val = data.get(key, "")
+        attrs[key] = val.strip() if isinstance(val, str) else ""
+    kw = data.get("keywords", "")
+    if isinstance(kw, list):
+        kw = " ".join(str(x) for x in kw)
+    attrs["keywords"] = kw.strip() if isinstance(kw, str) else ""
+    return attrs
+
+
+def attrs_to_query(attrs):
+    """Turn the tags into (search query, human-readable summary).
+
+    color + print + category anchor the match; keywords add shape/detail. The
+    summary is what the UI shows on the "AI saw: ..." line.
+    """
+    anchor = [a for a in (attrs.get("color"), attrs.get("print"), attrs.get("category")) if a]
+    query = " ".join([*anchor, attrs.get("keywords", "")]).strip()
+    summary = " ".join(anchor)
+    if attrs.get("keywords"):
+        summary = f"{summary} - {attrs['keywords']}" if summary else attrs["keywords"]
+    return query, summary
+
+
 @router.post("/by-image")
 async def search_by_image(
     request: Request,
@@ -93,9 +218,9 @@ async def search_by_image(
 ):
     """Upload a garment photo and get visually similar products.
 
-    How it works: a vision model looks at the photo and writes a short
-    product description ("black oversized hoodie, solid"), and that
-    description goes through the same semantic search as text queries.
+    A vision model tags the photo with catalog-grounded attributes
+    (category, color, print + descriptive keywords), and those attributes
+    drive a weighted hybrid search that leans hardest on category and color.
     """
     ip = request.client.host if request.client else "unknown"
     if not rate_limit_ok(ip):
@@ -107,38 +232,23 @@ async def search_by_image(
     if len(data) > MAX_IMAGE_BYTES:
         raise HTTPException(400, "Image too large - maximum 4 MB.")
 
-    # detail:"low" = the model sees a small version of the image,
-    # which is plenty for "what garment is this" and keeps cost tiny
     b64 = base64.b64encode(data).decode()
-    response = llm.client.chat.completions.create(
-        model=config.OPENROUTER_MODEL,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Describe this garment for a product search in under 15 words: "
-                        "garment type, color, pattern, style. Reply with only the description.",
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{image.content_type};base64,{b64}",
-                            "detail": "low",
-                        },
-                    },
-                ],
-            }
-        ],
-        max_tokens=60,
-        temperature=0,
-    )
-    description = (response.choices[0].message.content or "").strip()
-    if not description:
+    try:
+        attrs = describe_garment(image.content_type, b64)
+    except Exception as exc:
+        print(f"WARNING: image tagging failed: {exc}")
+        raise HTTPException(502, "Could not read the image, please try another photo.")
+
+    query, summary = attrs_to_query(attrs)
+    if not query:
         raise HTTPException(502, "Could not understand the image, please try another photo.")
 
-    return {"description": description, **run_search(description, limit)}
+    payload = run_search(
+        query, limit, query_by=IMAGE_QUERY_BY, query_by_weights=IMAGE_QUERY_BY_WEIGHTS
+    )
+    # "description" keeps the existing UI working; "attributes" carries the
+    # structured tags for anything that wants them later.
+    return {"description": summary, "attributes": attrs, **payload}
 
 
 @router.post("/reindex")
