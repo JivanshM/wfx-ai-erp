@@ -72,6 +72,36 @@ def rate_confidence(question, sql):
         return None, None  # a missing score should never break the answer
 
 
+def enrich_products(rows):
+    """When the answer rows are products (they carry a style_number), fetch the
+    full record for each - image, supplier, price - so the UI can render the same
+    rich product cards as the Goods Explorer. Returns None for non-product results
+    (aggregates, buyer lists, etc.), which stay as a plain table.
+    """
+    if not rows or "style_number" not in rows[0]:
+        return None
+    seen, ordered = set(), []  # keep the query's own order, drop dupes/blanks
+    for r in rows:
+        sn = r.get("style_number")
+        if sn and sn not in seen:
+            seen.add(sn)
+            ordered.append(sn)
+    if not ordered:
+        return None
+    found = run_query(
+        """
+        select fg.*, s.company_name as supplier_name
+        from finished_goods fg
+        join suppliers s on s.supplier_id = fg.supplier_id
+        where fg.style_number = any(%s)
+        """,
+        [ordered],
+        readonly=True,
+    )
+    by_id = {p["style_number"]: p for p in found}
+    return [by_id[sn] for sn in ordered if sn in by_id]
+
+
 class QueryRequest(BaseModel):
     question: str
 
@@ -140,6 +170,13 @@ def ask(body: QueryRequest, request: Request):
     # Step 5: self-check - how well does the SQL match the question?
     confidence, confidence_reason = rate_confidence(question, sql)
 
+    # Step 6: if the rows are products, attach full product records so the
+    # frontend can show Explorer-style cards. Best-effort - never break the answer.
+    try:
+        products = enrich_products(rows)
+    except Exception:
+        products = None
+
     return {
         "success": True,
         "question": question,
@@ -150,4 +187,5 @@ def ask(body: QueryRequest, request: Request):
         "answer": answer,
         "confidence": confidence,
         "confidence_reason": confidence_reason,
+        "products": products,
     }
