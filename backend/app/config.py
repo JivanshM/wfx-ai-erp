@@ -19,7 +19,12 @@ if not os.getenv("READONLY_DATABASE_URL"):
 
 # OpenRouter gives us access to LLMs through one API
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+# Text model: natural-language-to-SQL, dashboard insights, confidence scoring.
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+# Vision model: describing an uploaded photo for image search. A separate
+# setting so image search can use a stronger (or cheaper/faster) multimodal
+# model than the text model; falls back to OPENROUTER_MODEL when unset.
+OPENROUTER_VISION_MODEL = os.getenv("OPENROUTER_VISION_MODEL", "") or OPENROUTER_MODEL
 
 # Typesense Cloud (product search)
 TYPESENSE_HOST = os.getenv("TYPESENSE_HOST", "")

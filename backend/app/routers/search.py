@@ -184,7 +184,7 @@ def describe_garment(content_type, b64):
         "Choose category and color ONLY from the given lists. Reply with JSON only."
     )
     response = llm.client.chat.completions.create(
-        model=config.OPENROUTER_MODEL,
+        model=config.OPENROUTER_VISION_MODEL,
         messages=[
             {
                 "role": "user",
