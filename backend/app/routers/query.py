@@ -197,6 +197,8 @@ def ask(body: QueryRequest, request: Request):
             if fixes >= MAX_SQL_FIXES:
                 return {"success": False, "sql": sql, "error": f"The database raised an eyebrow at that one: {exc}"}
             fixes += 1
+            # shows up in the server logs - handy proof the loop is working
+            print(f"self-correction round {fixes}: {exc}")
             try:
                 repaired = fix_sql(question, sql, str(exc))
             except Exception:
