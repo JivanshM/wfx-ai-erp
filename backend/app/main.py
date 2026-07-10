@@ -11,7 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import buyers, dashboard, products, query, search, suppliers
 
-KEEP_ALIVE_MINUTES = 5  # free tier sleeps after 15 idle minutes - ping well before
+# The free tier sleeps after 15 idle minutes. At 4-minute intervals even two
+# failed pings in a row keep the traffic gap under that limit.
+KEEP_ALIVE_MINUTES = 4
 
 
 def keep_alive():
@@ -29,9 +31,10 @@ def keep_alive():
     while True:
         time.sleep(KEEP_ALIVE_MINUTES * 60)
         try:
-            urllib.request.urlopen(f"{url}/health", timeout=30)
+            with urllib.request.urlopen(f"{url}/health", timeout=30):
+                pass  # the inbound hit is what matters, not the body
         except Exception:
-            pass  # one missed ping is fine - the next is 5 minutes away
+            pass  # a missed ping is fine - the next is 4 minutes away
 
 
 @asynccontextmanager

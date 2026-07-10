@@ -4,6 +4,7 @@ import json
 import re
 
 import pandas as pd
+import psycopg2
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
@@ -102,8 +103,24 @@ def fix_sql(question, sql, error):
         temperature=0,
     )
     text = response.choices[0].message.content.strip()
-    text = text.removeprefix("```sql").removeprefix("```").removesuffix("```").strip()
-    return text
+    # strip a markdown fence in any capitalisation ("```sql", "```SQL", "```PostgreSQL")
+    text = re.sub(r"^```[\w+-]*\s*", "", text)
+    return re.sub(r"\s*```$", "", text).strip()
+
+
+def db_error_message(exc):
+    """Friendly error text that never leaks connection internals.
+
+    Connection failures contain hostnames and usernames, so the user gets a
+    generic line. Query errors ('column x does not exist') describe the
+    model's own SQL - the first line is safe and genuinely useful to show.
+    """
+    if isinstance(exc, psycopg2.errors.QueryCanceled):
+        return "That question needs a heavier query than the 8-second budget allows - try narrowing it down."
+    if isinstance(exc, psycopg2.OperationalError):
+        return "The database is having a moment - please try that again in a few seconds."
+    first_line = str(exc).strip().splitlines()[0] if str(exc).strip() else "unknown error"
+    return f"The database raised an eyebrow at that one: {first_line}"
 
 
 def enrich_products(rows):
@@ -194,8 +211,11 @@ def ask(body: QueryRequest, request: Request):
             rows = run_query(sql, readonly=True, timeout_ms=8000, max_rows=MAX_ROWS + 1)
             break
         except Exception as exc:
-            if fixes >= MAX_SQL_FIXES:
-                return {"success": False, "sql": sql, "error": f"The database raised an eyebrow at that one: {exc}"}
+            # timeouts and connection hiccups are not SQL mistakes - no amount
+            # of rewriting fixes those, so fail fast instead of burning retries
+            # (QueryCanceled and connection errors are both OperationalError)
+            if isinstance(exc, psycopg2.OperationalError) or fixes >= MAX_SQL_FIXES:
+                return {"success": False, "sql": sql, "error": db_error_message(exc)}
             fixes += 1
             # shows up in the server logs - handy proof the loop is working
             print(f"self-correction round {fixes}: {exc}")
@@ -203,10 +223,14 @@ def ask(body: QueryRequest, request: Request):
                 repaired = fix_sql(question, sql, str(exc))
             except Exception:
                 repaired = ""
-            # a repaired query goes through the same safety gate - a "fix"
-            # that is not a clean read-only SELECT is not a fix we accept
-            if not repaired or not is_safe_select(repaired):
-                return {"success": False, "sql": sql, "error": f"The database raised an eyebrow at that one: {exc}"}
+            # a repaired query goes through the same safety gate, and a "fix"
+            # identical to the query that just failed is not a fix either
+            if (
+                not repaired
+                or repaired.strip().rstrip(";") == sql.strip().rstrip(";")
+                or not is_safe_select(repaired)
+            ):
+                return {"success": False, "sql": sql, "error": db_error_message(exc)}
             sql = repaired
 
     truncated = len(rows) > MAX_ROWS
