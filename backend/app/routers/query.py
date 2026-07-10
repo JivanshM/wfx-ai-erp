@@ -22,6 +22,7 @@ FORBIDDEN_WORDS = re.compile(
 
 MAX_ROWS = 200      # never send huge result sets to the browser
 SUMMARY_ROWS = 30   # the LLM only needs a sample of rows to write the answer
+MAX_SQL_FIXES = 2   # how many times the model may repair its own failing SQL
 
 
 def is_safe_select(sql: str) -> bool:
@@ -70,6 +71,39 @@ def rate_confidence(question, sql):
         return max(0, min(100, int(data["confidence"]))), str(data.get("reason", ""))
     except Exception:
         return None, None  # a missing score should never break the answer
+
+
+def fix_sql(question, sql, error):
+    """Self-correction: when Postgres rejects the SQL, show the model its own
+    broken query plus the exact error message and ask for a repaired version.
+
+    A model fixes a concrete complaint ('column fg.colour does not exist')
+    far more reliably than it writes perfect SQL on the first try - the
+    same way a human analyst works: run it, read the error, adjust.
+    """
+    ddls = "\n\n".join(nl2sql.TABLE_DDLS)
+    response = llm.client.chat.completions.create(
+        model=config.OPENROUTER_MODEL,
+        messages=[
+            {
+                "role": "user",
+                "content": (
+                    "This PostgreSQL query for an apparel ERP failed.\n\n"
+                    f"Schema:\n{ddls}\n\n"
+                    f"Question it should answer: {question}\n\n"
+                    f"Failing SQL:\n{sql}\n\n"
+                    f"PostgreSQL error:\n{error}\n\n"
+                    "Reply with ONLY the corrected SQL - one read-only SELECT "
+                    "(or WITH) statement, no explanation, no markdown."
+                ),
+            }
+        ],
+        max_tokens=500,
+        temperature=0,
+    )
+    text = response.choices[0].message.content.strip()
+    text = text.removeprefix("```sql").removeprefix("```").removesuffix("```").strip()
+    return text
 
 
 def enrich_products(rows):
@@ -150,11 +184,28 @@ def ask(body: QueryRequest, request: Request):
         }
 
     # Step 3: run it as the read-only user, with an 8 second time limit,
-    # fetching one row over the limit so we know whether we truncated
-    try:
-        rows = run_query(sql, readonly=True, timeout_ms=8000, max_rows=MAX_ROWS + 1)
-    except Exception as exc:
-        return {"success": False, "sql": sql, "error": f"The database raised an eyebrow at that one: {exc}"}
+    # fetching one row over the limit so we know whether we truncated.
+    # If Postgres rejects the query we don't give up straight away: the
+    # exact error goes back to the model, which repairs its own SQL
+    # (self-correction loop, at most MAX_SQL_FIXES rounds).
+    fixes = 0
+    while True:
+        try:
+            rows = run_query(sql, readonly=True, timeout_ms=8000, max_rows=MAX_ROWS + 1)
+            break
+        except Exception as exc:
+            if fixes >= MAX_SQL_FIXES:
+                return {"success": False, "sql": sql, "error": f"The database raised an eyebrow at that one: {exc}"}
+            fixes += 1
+            try:
+                repaired = fix_sql(question, sql, str(exc))
+            except Exception:
+                repaired = ""
+            # a repaired query goes through the same safety gate - a "fix"
+            # that is not a clean read-only SELECT is not a fix we accept
+            if not repaired or not is_safe_select(repaired):
+                return {"success": False, "sql": sql, "error": f"The database raised an eyebrow at that one: {exc}"}
+            sql = repaired
 
     truncated = len(rows) > MAX_ROWS
     rows = rows[:MAX_ROWS]
